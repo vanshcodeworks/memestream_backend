@@ -26,7 +26,12 @@ try {
 
 // Middlewares
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: [
+    'http://localhost:5173', 
+    'http://127.0.0.1:5173',
+    'https://memestream-ten.vercel.app',
+    'https://memestream.vercel.app'
+  ],
   credentials: true,
 }));
 app.use(express.json({ limit: '50mb' }));
