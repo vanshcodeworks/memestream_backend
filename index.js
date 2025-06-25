@@ -24,28 +24,50 @@ try {
   console.error('MongoDB connection failed:', error.message);
 }
 
-// More permissive CORS configuration
-app.use(cors({
-  origin: '*', // Allow all origins in development/testing
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'User-ID'],
-  credentials: true,
-  preflightContinue: false,
-  optionsSuccessStatus: 204
-}));
+// Define CORS options
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl requests)
+    if (!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      'https://memestream-ten.vercel.app',
+      'https://memestream.vercel.app',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173'
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.match(/\.vercel\.app$/)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS not allowed'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'User-ID'],
+  credentials: false,
+  maxAge: 86400 // Cache preflight request for 24 hours
+};
 
-// Handle preflight OPTIONS requests explicitly
-app.options('*', cors());
+// Apply CORS middleware
+app.use(cors(corsOptions));
 
-// Handle OPTIONS requests for all routes
-app.options('/*', (_, res) => {
-  res.sendStatus(200);
-});
+// Handle preflight OPTIONS requests
+app.options('*', cors(corsOptions));
 
 // Regular middleware
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
+
+// Set CORS headers for all responses
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, User-ID');
+  next();
+});
 
 // API status endpoint
 app.get('/api', (req, res) => {
@@ -54,15 +76,6 @@ app.get('/api', (req, res) => {
     status: 'online',
     version: '1.0.0',
     cors: 'enabled'
-  });
-});
-
-// Test CORS endpoint
-app.get('/api/test-cors', (req, res) => {
-  res.json({ 
-    success: true, 
-    message: 'CORS is working correctly',
-    origin: req.headers.origin || 'Unknown'
   });
 });
 
