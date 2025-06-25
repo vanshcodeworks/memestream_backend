@@ -24,26 +24,45 @@ try {
   console.error('MongoDB connection failed:', error.message);
 }
 
-// Middlewares
+// More permissive CORS configuration
 app.use(cors({
-  origin: [
-    'http://localhost:5173', 
-    'http://127.0.0.1:5173',
-    'https://memestream-ten.vercel.app',
-    'https://memestream.vercel.app'
-  ],
+  origin: '*', // Allow all origins in development/testing
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'User-ID'],
   credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
+
+// Handle preflight OPTIONS requests explicitly
+app.options('*', cors());
+
+// Handle OPTIONS requests for all routes
+app.options('/*', (_, res) => {
+  res.sendStatus(200);
+});
+
+// Regular middleware
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// Routes
+// API status endpoint
 app.get('/api', (req, res) => {
   res.json({ 
     message: 'Welcome to MemeStream API',
     status: 'online',
-    version: '1.0.0'
+    version: '1.0.0',
+    cors: 'enabled'
+  });
+});
+
+// Test CORS endpoint
+app.get('/api/test-cors', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'CORS is working correctly',
+    origin: req.headers.origin || 'Unknown'
   });
 });
 
